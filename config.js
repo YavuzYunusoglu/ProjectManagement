@@ -14,7 +14,7 @@
  */
 window.GDPM_CONFIG = {
   googleDrive: {
-    clientId: '906506928973-37ac0d20si1fp0c0h273j8o1pipu3jeb.apps.googleusercontent.com ', // 1234567890-abc….apps.googleusercontent.com
+    clientId: '906506928973-37ac0d20si1fp0c0h273j8o1pipu3jeb.apps.googleusercontent.com', // 1234567890-abc….apps.googleusercontent.com
     apiKey: 'AIzaSyCGANgZ5lRSStHU4ubVaVOpp8N5ZdLonAc',   // AIza…
     appId: '906506928973',    // Google Cloud project number, e.g. 123456789012
   },

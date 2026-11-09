@@ -102,7 +102,14 @@ const Settings = {
   pane_sync() {
     const s = Prefs.get('sync'), p = s.provider;
     const st = Sync.status;
-    const statusLine = `<div class="sync-status st-${st}">${icon(st === 'local' ? 'cloudOff' : 'cloud')}<span><strong>${t('sync.st.' + st)}</strong>${Sync.detail ? ` · ${U.esc(Sync.detail)}` : ''}</span></div>`;
+    Sync.preload();
+    const statusLine = `<div class="sync-status st-${st}">${icon(st === 'local' ? 'cloudOff' : st === 'error' ? 'warn' : 'cloud')}<span><strong>${t('sync.st.' + st)}</strong>${Sync.detail ? `<code class="sync-code">${U.esc(Sync.detail)}</code>` : ''}</span></div>`;
+    const items = Sync.logItems.slice().reverse();
+    const lastErr = items.length && items[0].level === 'error';
+    const logHtml = `<details class="sync-log" ${lastErr ? 'open' : ''}><summary>${icon('file')} ${t('sync.log')} <span class="mono muted">${items.length}</span></summary>
+        <div class="row gap"><button class="btn sm" data-a="log-copy">${icon('copy')} ${t('sync.logCopy')}</button><button class="btn sm ghost" data-a="log-clear">${icon('trash')} ${t('sync.logClear')}</button></div>
+        <ol class="log-list">${items.map(x => `<li class="lv-${x.level}"><span class="mono muted">${new Date(x.at).toLocaleTimeString(I18n.locale())}</span><span class="mono">${U.esc(x.step)}</span>${x.code ? `<code>${U.esc(x.code)}</code>` : '<span></span>'}<span>${U.esc(x.msg)}</span></li>`).join('') || `<li class="hint">${t('sync.logEmpty')}</li>`}</ol>
+      </details>`;
     let body = '';
     if (p === 'drive') {
       const keys = s.team
@@ -126,6 +133,7 @@ const Settings = {
       ${s.team ? '' : this.radio('provider', p, [['none', t('sync.p.none')], ['drive', 'Google Drive']])}
       ${p !== 'none' ? statusLine : ''}
       <div class="sync-body">${body}</div>
+      ${p !== 'none' ? logHtml : ''}
       <details class="sync-help"><summary>${icon('info')} ${t('sync.how')}</summary>
         <div class="md">${MD.render(t('sync.howText'))}</div></details>
       <p class="hint">${t('sync.readme')} <code>README.md</code></p>`;
@@ -240,7 +248,7 @@ const Settings = {
         case 'sync-now': Sync.now(); break;
         case 'dr-create': case 'dr-pick': case 'dr-paste': {
           if (!Prefs.get('sync').drive.clientId) { UI.toast(t('sync.noClientId'), { kind: 'err' }); break; }
-          if (!Sync.drive.token) { await U.loadScript('https://accounts.google.com/gsi/client'); await Sync.drive.signIn(); }
+          await Sync.drive.ensureToken();
           if (act === 'dr-create') { await Sync.drive.createFile(); UI.toast(t('sync.dr.created')); }
           else if (act === 'dr-pick') { if (!(await Sync.drive.pickFile())) break; }
           else {
@@ -253,6 +261,13 @@ const Settings = {
           App.renderTop(); this.render();
           break;
         }
+        case 'log-copy': {
+          const env = `origin=${location.origin} ua=${navigator.userAgent}`;
+          const txt = [env, ...Sync.logItems.map(x => `${new Date(x.at).toISOString()} ${x.level.toUpperCase()} ${x.step}${x.code ? ' [' + x.code + ']' : ''} ${x.msg}`)].join('\n');
+          await U.copy(txt); UI.toast(t('copied'));
+          break;
+        }
+        case 'log-clear': Sync.clearLog(); this.render(); break;
         case 'dr-forget': Sync.stop(); Prefs.patch('sync', { drive: { ...Prefs.get('sync').drive, fileId: '', fileName: '' } }); this.render(); App.renderTop(); break;
         case 'export-json': {
           const data = { app: 'gamedev-pm', v: 1, exportedAt: new Date().toISOString(), entities: Store.raw() };
@@ -296,7 +311,8 @@ const Settings = {
         }
       }
     } catch (err) {
-      UI.toast(err.message || String(err), { kind: 'err' });
+      if (/^(sync|dr-)/.test(act)) { Sync.report(act, err); this.render(); }
+      UI.toast(`${err.code ? '[' + err.code + '] ' : ''}${err.message || String(err)}`, { kind: 'err', timeout: 8000 });
     }
   },
 };

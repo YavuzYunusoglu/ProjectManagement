@@ -613,3 +613,16 @@ button.ai-tr:hover { background: var(--panel-2); }
 @media print {
   .top, .dock { display: none; }
 }
+
+/* sync log */
+.sync-code { display: block; margin-top: 3px; font-family: var(--font-mono); font-size: 12px; color: var(--text-2); white-space: normal; word-break: break-word; }
+.sync-log { margin-top: 10px; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+.sync-log summary { cursor: pointer; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.log-list { list-style: none; margin: 8px 0 0; padding: 0; max-height: 260px; overflow-y: auto; display: grid; gap: 2px; font-size: 12px; }
+.log-list li { display: grid; grid-template-columns: 70px 70px auto 1fr; gap: 8px; align-items: baseline; padding: 4px 6px; border-radius: 6px; }
+.log-list li code { font-family: var(--font-mono); font-size: 11px; padding: 0 5px; border-radius: 4px; background: var(--panel-2); border: 1px solid var(--line); white-space: nowrap; }
+.log-list li span:last-child { word-break: break-word; color: var(--text-2); }
+.log-list .lv-error { background: color-mix(in srgb, var(--danger) 10%, transparent); }
+.log-list .lv-error code { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, transparent); }
+.log-list .lv-warn code { color: var(--warn); }
+@media (max-width: 760px) { .log-list li { grid-template-columns: 1fr; gap: 2px; } }

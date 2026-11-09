@@ -28,12 +28,12 @@ const Prefs = (() => {
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(p)); } catch { /* storage full or blocked */ } };
   /* Google Drive keys from config.js (committed to the repo) apply to everyone; each person still picks the file. */
   const team = (window.GDPM_CONFIG && window.GDPM_CONFIG.googleDrive) || {};
-  const teamOn = !!team.clientId;
+  const teamOn = !!String(team.clientId || '').trim();
   const effectiveSync = () => {
     if (!teamOn) return p.sync;
     return {
       ...p.sync, team: true, provider: 'drive',
-      drive: { ...p.sync.drive, clientId: team.clientId, apiKey: team.apiKey || '', appId: String(team.appId || '') },
+      drive: { ...p.sync.drive, clientId: String(team.clientId).trim(), apiKey: String(team.apiKey || '').trim(), appId: String(team.appId || '').trim() },
     };
   };
   return {
