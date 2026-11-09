@@ -1,9 +1,7 @@
 'use strict';
 /*
- * Cloud sync. Two interchangeable back ends:
- *  - Firebase Firestore: one document per entity, real-time listener.
- *  - Google Drive: one JSON file, polled every 15 s; merge-then-upload.
- * Both rely on Store's per-entity last-writer-wins merge, so a lost race heals
+ * Cloud sync through Google Drive: one JSON file, polled every 15 s; merge-then-upload.
+ * Relies on Store's per-entity last-writer-wins merge, so a lost race heals
  * itself on the next cycle (the newer local copy is pushed again).
  */
 const Sync = (() => {
@@ -33,85 +31,6 @@ const Sync = (() => {
     if (choice === 'remote') Store.replaceAll(Object.values(remoteMap));
     else Store.applyRemote(Object.values(remoteMap));
   }
-
-  function parseConfig(s) {
-    s = String(s || '');
-    const a = s.indexOf('{'), b = s.lastIndexOf('}');
-    if (a < 0 || b < a) throw new Error(t('sync.badConfig'));
-    s = s.slice(a, b + 1);
-    try { return JSON.parse(s); } catch { /* JS object literal, convert below */ }
-    try {
-      return JSON.parse(s.replace(/([{,]\s*)([A-Za-z_$][\w$]*)\s*:/g, '$1"$2":').replace(/'/g, '"').replace(/,\s*}/g, '}'));
-    } catch { throw new Error(t('sync.badConfig')); }
-  }
-
-  /* ---------------- Firebase ---------------- */
-  const FirebaseAdapter = {
-    ready: false, pending: new Set(), unsub: null, user: null,
-    async start(interactive) {
-      const conf = Prefs.get('sync').firebase;
-      const config = parseConfig(conf.config);
-      const ws = (conf.workspace || 'gamedev-pm').replace(/[^\w-]/g, '_');
-      const base = 'https://www.gstatic.com/firebasejs/10.12.2/';
-      setStatus('connecting');
-      await U.loadScript(base + 'firebase-app-compat.js');
-      await U.loadScript(base + 'firebase-auth-compat.js');
-      await U.loadScript(base + 'firebase-firestore-compat.js');
-      let app = firebase.apps.find(x => x.name === 'gdpm');
-      if (app && app.options.projectId !== config.projectId) { await app.delete(); app = null; }
-      app = app || firebase.initializeApp(config, 'gdpm');
-      this.auth = app.auth();
-      this.db = app.firestore();
-      this.user = await new Promise(res => { const un = this.auth.onAuthStateChanged(u => { un(); res(u); }); });
-      if (!this.user) {
-        if (!interactive) { setStatus('needsLogin'); return; }
-        this.user = (await this.auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())).user;
-      }
-      this.col = this.db.collection('workspaces').doc(ws).collection('entities');
-      const key = `fb:${config.projectId}:${ws}`;
-      let first = true;
-      this.unsub = this.col.onSnapshot(async snap => {
-        if (first) {
-          first = false;
-          const remote = {};
-          snap.forEach(d => { remote[d.id] = d.data(); });
-          applyInitial(await initialMerge(remote, key), remote);
-          this.ready = true;
-          this.queue(Store.newerThan(remote));
-          setStatus('synced', this.user.email);
-          return;
-        }
-        const list = snap.docChanges().filter(ch => ch.type !== 'removed' && !ch.doc.metadata.hasPendingWrites).map(ch => ch.doc.data());
-        Store.applyRemote(list);
-        if (!this.pending.size) setStatus('synced', this.user.email);
-      }, err => setStatus('error', err.code === 'permission-denied' ? t('sync.denied') : err.message));
-    },
-    queue(ids) {
-      if (!this.ready) return;
-      ids.forEach(i => this.pending.add(i));
-      if (!this.pending.size) return;
-      setStatus('syncing', this.user?.email);
-      clearTimeout(this.t);
-      this.t = setTimeout(() => this.flush(), 400);
-    },
-    async flush() {
-      const ids = [...this.pending]; this.pending.clear();
-      const raw = Store.raw();
-      try {
-        for (let i = 0; i < ids.length; i += 400) {
-          const batch = this.db.batch();
-          ids.slice(i, i + 400).forEach(id => raw[id] && batch.set(this.col.doc(id), clone(raw[id])));
-          await batch.commit();
-        }
-        if (!this.pending.size) setStatus('synced', this.user?.email);
-      } catch (e) {
-        ids.forEach(i => this.pending.add(i));
-        setStatus('error', e.code === 'permission-denied' ? t('sync.denied') : e.message);
-      }
-    },
-    stop() { this.unsub && this.unsub(); this.unsub = null; this.ready = false; clearTimeout(this.t); },
-    async signOut() { this.stop(); try { await this.auth?.signOut(); } catch { /* ignore */ } },
-  };
 
   /* ---------------- Google Drive ---------------- */
   const SCOPE = 'https://www.googleapis.com/auth/drive.file';
@@ -252,7 +171,7 @@ const Sync = (() => {
     },
   };
 
-  const adapters = { firebase: FirebaseAdapter, drive: DriveAdapter };
+  const adapters = { drive: DriveAdapter };
   window.addEventListener('online', () => { if (adapter === DriveAdapter) DriveAdapter.sync(); });
 
   return {

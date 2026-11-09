@@ -50,7 +50,9 @@ const Settings = {
       <div class="field"><span class="field-label">${t('settings.language')}</span>${this.radio('lang', Prefs.get('lang'), [['system', t('settings.system')], ['tr', 'Türkçe'], ['en', 'English']])}</div>
       <label class="field">${t('settings.me')}<select class="input" data-s="me">${opt('', '—', Prefs.get('me'))}${Model.members().map(m => opt(m.id, m.name, Prefs.get('me'))).join('')}</select><span class="hint">${t('settings.meHint')}</span></label>
       <div class="field"><span class="field-label">${t('settings.shortcuts')}</span>
-        <ul class="kbd-list"><li><kbd>/</kbd> ${t('kbd.search')}</li><li><kbd>1</kbd>–<kbd>7</kbd> ${t('kbd.views')}</li><li><kbd>Esc</kbd> ${t('kbd.close')}</li><li><kbd>Ctrl</kbd>+<kbd>Enter</kbd> ${t('kbd.save')}</li></ul></div>`;
+        <ul class="kbd-list"><li><kbd>/</kbd> ${t('kbd.search')}</li><li><kbd>1</kbd>–<kbd>7</kbd> ${t('kbd.views')}</li><li><kbd>Esc</kbd> ${t('kbd.close')}</li><li><kbd>Ctrl</kbd>+<kbd>Enter</kbd> ${t('kbd.save')}</li></ul></div>
+      <div class="field about"><span class="field-label">${t('about.title')}</span>
+        <p class="notice">${icon('sparkle')} <span>${t('about.ai')}</span></p></div>`;
   },
   pane_board() {
     const b = Model.board(); if (!b) return '';
@@ -102,17 +104,16 @@ const Settings = {
     const st = Sync.status;
     const statusLine = `<div class="sync-status st-${st}">${icon(st === 'local' ? 'cloudOff' : 'cloud')}<span><strong>${t('sync.st.' + st)}</strong>${Sync.detail ? ` · ${U.esc(Sync.detail)}` : ''}</span></div>`;
     let body = '';
-    if (p === 'firebase') {
-      body = `<label class="field">${t('sync.fb.config')}<textarea class="input mono" rows="7" data-sf="firebase.config" placeholder='{ "apiKey": "…", "authDomain": "…", "projectId": "…", "appId": "…" }'>${U.esc(s.firebase.config)}</textarea><span class="hint">${t('sync.fb.configHint')}</span></label>
-        <label class="field">${t('sync.fb.workspace')}<input class="input mono" data-sf="firebase.workspace" value="${U.esc(s.firebase.workspace)}"><span class="hint">${t('sync.fb.workspaceHint')}</span></label>
-        <div class="row gap">${st === 'synced' || st === 'syncing' ? `<button class="btn" data-a="sync-signout">${icon('logout')} ${t('sync.signOut')}</button>` : `<button class="btn primary" data-a="sync-connect">${icon('cloud')} ${t('sync.connectGoogle')}</button>`}</div>`;
-    } else if (p === 'drive') {
-      body = `<label class="field">${t('sync.dr.clientId')}<input class="input mono" data-sf="drive.clientId" value="${U.esc(s.drive.clientId)}" placeholder="1234…apps.googleusercontent.com"></label>
+    if (p === 'drive') {
+      const keys = s.team
+        ? `<p class="notice ok">${icon('check')} <span>${t('sync.dr.teamKeys')}</span></p>`
+        : `<label class="field">${t('sync.dr.clientId')}<input class="input mono" data-sf="drive.clientId" value="${U.esc(s.drive.clientId)}" placeholder="1234…apps.googleusercontent.com"></label>
         <div class="form-grid two">
           <label class="field">${t('sync.dr.apiKey')}<input class="input mono" data-sf="drive.apiKey" value="${U.esc(s.drive.apiKey)}" placeholder="AIza…"></label>
           <label class="field">${t('sync.dr.appId')}<input class="input mono" data-sf="drive.appId" value="${U.esc(s.drive.appId)}" placeholder="123456789012"></label>
         </div>
-        <span class="hint">${t('sync.dr.pickerHint')}</span>
+        <span class="hint">${t('sync.dr.keysHint')}</span>`;
+      body = `${keys}
         <div class="field"><span class="field-label">${t('sync.dr.file')}</span>
           ${s.drive.fileId ? `<div class="file-row">${icon('file')}<span><strong>${U.esc(s.drive.fileName || 'data.json')}</strong><small class="mono">${U.esc(s.drive.fileId)}</small></span><button class="btn sm ghost" data-a="dr-forget">${t('sync.dr.forget')}</button></div>`
           : `<div class="row wrap gap"><button class="btn sm" data-a="dr-create">${icon('plus')} ${t('sync.dr.create')}</button><button class="btn sm" data-a="dr-pick">${icon('search')} ${t('sync.dr.pick')}</button><button class="btn sm ghost" data-a="dr-paste">${icon('edit')} ${t('sync.dr.paste')}</button></div><span class="hint">${t('sync.dr.fileHint')}</span>`}
@@ -122,11 +123,11 @@ const Settings = {
       body = `<p class="hint">${t('sync.localHint')}</p>`;
     }
     return `<h3>${t('settings.sync')}</h3>
-      ${this.radio('provider', p, [['none', t('sync.p.none')], ['firebase', 'Firebase'], ['drive', 'Google Drive']])}
+      ${s.team ? '' : this.radio('provider', p, [['none', t('sync.p.none')], ['drive', 'Google Drive']])}
       ${p !== 'none' ? statusLine : ''}
       <div class="sync-body">${body}</div>
-      <details class="sync-help"><summary>${icon('info')} ${t('sync.compare')}</summary>
-        <div class="md">${MD.render(t('sync.compareText'))}</div></details>
+      <details class="sync-help"><summary>${icon('info')} ${t('sync.how')}</summary>
+        <div class="md">${MD.render(t('sync.howText'))}</div></details>
       <p class="hint">${t('sync.readme')} <code>README.md</code></p>`;
   },
   pane_data() {

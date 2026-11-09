@@ -11,7 +11,6 @@ const Prefs = (() => {
     theme: 'system', lang: 'system', view: 'board', boardId: null, me: null,
     sync: {
       provider: 'none',
-      firebase: { config: '', workspace: 'gamedev-pm' },
       drive: { clientId: '', apiKey: '', appId: '', fileId: '', fileName: '' },
       initDone: {},
     },
@@ -24,19 +23,17 @@ const Prefs = (() => {
   try { p = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch { p = {}; }
   p = { ...defaults, ...p };
   for (const k of ['sync', 'gantt', 'workload', 'stats']) p[k] = { ...defaults[k], ...(p[k] || {}) };
-  p.sync.firebase = { ...defaults.sync.firebase, ...p.sync.firebase };
+  if (p.sync.provider !== 'drive') p.sync.provider = 'none';
   p.sync.drive = { ...defaults.sync.drive, ...p.sync.drive };
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(p)); } catch { /* storage full or blocked */ } };
-  /* Team settings from config.js (committed to the repo) override each person's sync settings. */
-  const team = (window.GDPM_CONFIG && window.GDPM_CONFIG.sync) || {};
-  const teamOn = ['firebase', 'drive'].includes(team.provider);
+  /* Google Drive keys from config.js (committed to the repo) apply to everyone; each person still picks the file. */
+  const team = (window.GDPM_CONFIG && window.GDPM_CONFIG.googleDrive) || {};
+  const teamOn = !!team.clientId;
   const effectiveSync = () => {
     if (!teamOn) return p.sync;
-    const fb = team.firebase || {}, dr = team.drive || {};
     return {
-      ...p.sync, team: true, provider: team.provider,
-      firebase: { config: typeof fb.config === 'string' ? fb.config : JSON.stringify(fb.config || {}), workspace: fb.workspace || 'gamedev-pm' },
-      drive: { ...p.sync.drive, clientId: dr.clientId || '', apiKey: dr.apiKey || '', appId: dr.appId || '', fileId: p.sync.drive.fileId || dr.fileId || '' },
+      ...p.sync, team: true, provider: 'drive',
+      drive: { ...p.sync.drive, clientId: team.clientId, apiKey: team.apiKey || '', appId: String(team.appId || '') },
     };
   };
   return {
