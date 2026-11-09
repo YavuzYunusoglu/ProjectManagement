@@ -73,15 +73,26 @@ const Sync = (() => {
     signIn() {
       const c = this.conf();
       return new Promise((res, rej) => {
+        let done = false, closedTimer = null;
+        const finish = (fn, v) => { if (done) return; done = true; clearTimeout(closedTimer); fn(v); };
         const tc = google.accounts.oauth2.initTokenClient({
           client_id: c.clientId, scope: SCOPE,
           callback: r => {
-            if (r.error) return rej(new Error(r.error));
+            if (r.error) return finish(rej, new Error(r.error_description || r.error));
             this.token = r.access_token; this.exp = Date.now() + (r.expires_in - 60) * 1000;
             sessionStorage.setItem('gdpm.dtok', JSON.stringify({ token: this.token, exp: this.exp, cid: c.clientId }));
-            res();
+            finish(res);
           },
-          error_callback: e => rej(new Error(e.message || e.type || 'auth')),
+          error_callback: e => {
+            // Browsers that isolate the Google popup (Cross-Origin-Opener-Policy) can report
+            // "popup_closed" even though the person approved; the token still arrives a moment later.
+            // So wait a little before treating it as a real cancel.
+            if (e && e.type === 'popup_closed') {
+              closedTimer = setTimeout(() => finish(rej, new Error(t('sync.popupClosed'))), 15000);
+              return;
+            }
+            finish(rej, new Error(e && e.type === 'popup_failed_to_open' ? t('popupBlocked') : (e && (e.message || e.type)) || 'auth'));
+          },
         });
         tc.requestAccessToken({ prompt: '' });
       });
