@@ -159,6 +159,7 @@ const CalendarView = {
     const n = U.diffDays(d.from, d.to);
     if (!n) { this.render(); return; }
     const ent = Store.get(d.id);
+    if (!ent) { this.render(); return; }
     if (d.kind === 'ms') Store.update(d.id, { date: U.addDays(ent.date, n) });
     else {
       const patch = {};

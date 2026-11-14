@@ -17,5 +17,10 @@ window.GDPM_CONFIG = {
     clientId: '906506928973-37ac0d20si1fp0c0h273j8o1pipu3jeb.apps.googleusercontent.com', // 1234567890-abc….apps.googleusercontent.com
     apiKey: 'AIzaSyCGANgZ5lRSStHU4ubVaVOpp8N5ZdLonAc',   // AIza…
     appId: '906506928973',    // Google Cloud project number, e.g. 123456789012
+    // EN: Optional. The shared data file's ID (Settings → Sync → "Copy ID for config.js"). With it, everyone
+    //     opens the team file automatically; nobody has to search for it.
+    // TR: İsteğe bağlı. Ortak veri dosyasının kimliği (Ayarlar → Senkronizasyon → "config.js için kimliği kopyala").
+    //     Doldurulursa herkes ekip dosyasını otomatik açar; kimse dosya aramak zorunda kalmaz.
+    fileId: '',
   },
 };

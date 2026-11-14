@@ -50,7 +50,7 @@ const Settings = {
       <div class="field"><span class="field-label">${t('settings.language')}</span>${this.radio('lang', Prefs.get('lang'), [['system', t('settings.system')], ['tr', 'Türkçe'], ['en', 'English']])}</div>
       <label class="field">${t('settings.me')}<select class="input" data-s="me">${opt('', '—', Prefs.get('me'))}${Model.members().map(m => opt(m.id, m.name, Prefs.get('me'))).join('')}</select><span class="hint">${t('settings.meHint')}</span></label>
       <div class="field"><span class="field-label">${t('settings.shortcuts')}</span>
-        <ul class="kbd-list"><li><kbd>/</kbd> ${t('kbd.search')}</li><li><kbd>1</kbd>–<kbd>7</kbd> ${t('kbd.views')}</li><li><kbd>Esc</kbd> ${t('kbd.close')}</li><li><kbd>Ctrl</kbd>+<kbd>Enter</kbd> ${t('kbd.save')}</li></ul></div>
+        <ul class="kbd-list"><li><kbd>/</kbd> ${t('kbd.search')}</li><li><kbd>1</kbd>–<kbd>8</kbd> ${t('kbd.views')}</li><li><kbd>Esc</kbd> ${t('kbd.close')}</li><li><kbd>Ctrl</kbd>+<kbd>Enter</kbd> ${t('kbd.save')}</li></ul></div>
       <div class="field about"><span class="field-label">${t('about.title')}</span>
         <p class="notice">${icon('sparkle')} <span>${t('about.ai')}</span></p></div>`;
   },
@@ -120,9 +120,14 @@ const Settings = {
           <label class="field">${t('sync.dr.appId')}<input class="input mono" data-sf="drive.appId" value="${U.esc(s.drive.appId)}" placeholder="123456789012"></label>
         </div>
         <span class="hint">${t('sync.dr.keysHint')}</span>`;
+      const isTeamFile = s.teamFile && s.drive.fileId === s.teamFile;
       body = `${keys}
+        ${s.drive.email ? `<p class="hint">${icon('user')} ${t('sync.dr.account')}: <strong>${U.esc(s.drive.email)}</strong></p>` : ''}
         <div class="field"><span class="field-label">${t('sync.dr.file')}</span>
-          ${s.drive.fileId ? `<div class="file-row">${icon('file')}<span><strong>${U.esc(s.drive.fileName || 'data.json')}</strong><small class="mono">${U.esc(s.drive.fileId)}</small></span><button class="btn sm ghost" data-a="dr-forget">${t('sync.dr.forget')}</button></div>`
+          ${s.drive.fileId ? `<div class="file-row">${icon('file')}<span><strong>${U.esc(s.drive.fileName || 'data.json')}</strong><small class="mono">${U.esc(s.drive.fileId)}${isTeamFile ? ' · ' + t('sync.dr.teamFile') : ''}</small></span>
+            ${st === 'needsFile' ? `<button class="btn sm primary" data-a="dr-pick">${icon('search')} ${t('sync.dr.pick')}</button>` : ''}
+            ${isTeamFile ? '' : `<button class="btn sm ghost" data-a="dr-copyid" title="${t('sync.dr.copyIdHint')}">${icon('copy')} ${t('sync.dr.copyId')}</button><button class="btn sm ghost" data-a="dr-forget">${t('sync.dr.forget')}</button>`}</div>
+            ${isTeamFile ? '' : `<span class="hint">${t('sync.dr.copyIdHint')}</span>`}`
           : `<div class="row wrap gap"><button class="btn sm" data-a="dr-create">${icon('plus')} ${t('sync.dr.create')}</button><button class="btn sm" data-a="dr-pick">${icon('search')} ${t('sync.dr.pick')}</button><button class="btn sm ghost" data-a="dr-paste">${icon('edit')} ${t('sync.dr.paste')}</button></div><span class="hint">${t('sync.dr.fileHint')}</span>`}
         </div>
         <div class="row gap">${st === 'synced' || st === 'syncing' ? `<button class="btn" data-a="sync-now">${icon('refresh')} ${t('sync.now')}</button><button class="btn" data-a="sync-signout">${icon('logout')} ${t('sync.signOut')}</button>` : `<button class="btn primary" data-a="sync-connect">${icon('cloud')} ${t('sync.connectGoogle')}</button>`}</div>`;
@@ -250,7 +255,7 @@ const Settings = {
           if (!Prefs.get('sync').drive.clientId) { UI.toast(t('sync.noClientId'), { kind: 'err' }); break; }
           await Sync.drive.ensureToken();
           if (act === 'dr-create') { await Sync.drive.createFile(); UI.toast(t('sync.dr.created')); }
-          else if (act === 'dr-pick') { if (!(await Sync.drive.pickFile())) break; }
+          else if (act === 'dr-pick') { if (!(await Sync.drive.pickFile(Prefs.get('sync').drive.fileId))) break; }
           else {
             const id = await UI.prompt(t('sync.dr.paste'), '', { placeholder: '1AbC…' });
             if (!id) break;
@@ -268,6 +273,7 @@ const Settings = {
           break;
         }
         case 'log-clear': Sync.clearLog(); this.render(); break;
+        case 'dr-copyid': await U.copy(Prefs.get('sync').drive.fileId); UI.toast(t('copied')); break;
         case 'dr-forget': Sync.stop(); Prefs.patch('sync', { drive: { ...Prefs.get('sync').drive, fileId: '', fileName: '' } }); this.render(); App.renderTop(); break;
         case 'export-json': {
           const data = { app: 'gamedev-pm', v: 1, exportedAt: new Date().toISOString(), entities: Store.raw() };

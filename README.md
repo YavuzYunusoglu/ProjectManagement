@@ -12,6 +12,7 @@ A project management tool for game development teams. It is plain HTML/CSS/JavaS
 | View | What it does |
 |---|---|
 | **Board** | Trello-style lists and cards. Drag and drop cards and lists (mouse, pen and touch). Cards support a color, colored labels, people, start/due dates, completion, Markdown descriptions, checklists, comments, an activity history, priority, time estimates and dependencies. Bug cards add severity, platforms, build number, steps to reproduce and expected/actual behavior. |
+| **To-do** | One card per person with a **daily, weekly or monthly** list. Cards assigned to the person whose dates fall in the period appear automatically (ticking one completes the card on the board); anyone can also add extra to-dos, optionally linked to a card. Sort by time, priority or a custom order you drag into place. Overdue cards and unfinished to-dos from earlier periods are shown on top. "Only me" and "Done items" toggles; the shared filter applies too. |
 | **Gantt** | Built automatically from cards. Day/week/month zoom; group by list, person or label; collapsible summary bars with progress fill. Milestones, dependency arrows (broken ones in red), critical path and a today line. Drag a bar to move its dates, drag an edge to change its length, drag from the dot on its right onto another bar to add a dependency. Exports to **SVG/PNG**. |
 | **Calendar** | Month view with multi-day bars. Drag to reschedule; click a day to add a card. Lists overdue and upcoming work. Exports to Google/Outlook as **.ics**. |
 | **Workload** | Person × week (or day) heat map. Estimated hours are spread across workdays; going over capacity shows in red. Exports to SVG/PNG. |
@@ -24,7 +25,7 @@ Also:
 - **Backgrounds:** 12 presets, a solid color, an image link or an uploaded image.
 - **Theme and language:** light/dark theme and Turkish/English follow the system setting by default. Change them from the top bar or Settings.
 - **Multiple boards**, Trello JSON import, and full JSON backup and restore.
-- **Shortcuts:** `/` focuses search, `1`–`7` switch views, `Esc` closes a dialog.
+- **Shortcuts:** `/` focuses search, `1`–`8` switch views, `Esc` closes a dialog.
 
 ## AI use section (TÜBİTAK guideline)
 
@@ -62,9 +63,9 @@ Data is always saved in the browser first (localStorage), so the app works offli
 
 ### Editing at the same time
 
-Every card, list, comment and so on is a separate record with its own "last changed" timestamp. Changes are merged **record by record**: if Ayşe edits card A while Mehmet edits card B, both changes are kept. Only when two people change **the same card within the same few seconds** does the last save win. Deletions are kept as records too, so a deleted card never comes back from another device.
+Every card, list, comment and so on is a separate record with its own "last changed" timestamp. Changes are merged **record by record**: if Ayşe edits card A while Mehmet edits card B, both changes are kept. When two people change **the same item**, the app asks the person who syncs second whether to **Keep** their version or **Replace** it with the one in Drive. When the app opens and the Drive file changed while this device had changes that were never uploaded (for example, edits made offline), it asks the same question: **Keep** merges in the team's updates and keeps your edits, **Replace** drops your unsent edits and uses the Drive copy. Deletions are kept as records too, so a deleted card never comes back from another device.
 
-The file is checked about every 15 seconds. Before uploading, the app downloads the latest file and merges it; if two uploads collide, the next round repairs it.
+The file is checked about every 15 seconds, and right away when you leave or come back to the tab. Before uploading, the app downloads the latest file and merges it, and checks once more just before writing; if two uploads still collide, the next round repairs it.
 
 ### Setup (once, by one person, about 15 minutes)
 
@@ -82,6 +83,7 @@ The file is checked about every 15 seconds. Before uploading, the app downloads 
        clientId: '1234567890-abc….apps.googleusercontent.com',
        apiKey: 'AIza…',
        appId: '123456789012',
+       fileId: '',   // optional: the shared data file, see below
      },
    };
    ```
@@ -91,10 +93,11 @@ The file is checked about every 15 seconds. Before uploading, the app downloads 
 ### For each team member
 
 1. One person clicks **Create a new file in Drive** in **Settings → Sync** and shares the resulting `gamedev-pm-data.json` in Drive with the team as **Editor**.
-2. Everyone else opens the site, clicks **Connect** in the top bar, and opens the shared file once with **Pick from Drive**.
-3. In **Settings → General → Who am I?**, each person picks their own name so comments and logs show it.
+2. Optional but recommended: in **Settings → Sync**, click **Copy ID for config.js**, paste it into `fileId` in `config.js` and push. From then on the site opens the team file for everyone automatically.
+3. Everyone else opens the site and clicks **Connect** once. The app finds the data file by itself (the team file from `config.js`, the file this browser used before, or the app's files in their Drive). Only if this Google account has never opened the shared file does Google require one click in its file picker; the picker opens with that file already selected.
+4. In **Settings → General → Who am I?**, each person picks their own name so comments and logs show it.
 
-The sign-in token lasts about an hour; when it expires, one click on **Connect** in the top bar is enough.
+**Staying signed in:** Google's browser sign-in issues tokens that last one hour, and a static site has no server that could renew them in the background. The app keeps the token across reloads and tabs, and when it is about to run out (or has run out) it renews it on your **next click anywhere on the page**: Google's window flashes open and closes by itself, without asking again. If your browser blocks that window, allow pop-ups for the site once. Edits made while signed out are kept and uploaded after the renewal.
 
 ## Backups
 
@@ -112,7 +115,7 @@ js/
   model.js                           board/card logic, filters, sample data, Trello import
   sync.js                            Google Drive sync
   md.js export.js settings.js app.js
-  views/  board card gantt calendar workload stats wiki ai
+  views/  board card todo gantt calendar workload stats wiki ai
 ```
 
 ## Credits

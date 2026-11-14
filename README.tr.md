@@ -12,6 +12,7 @@ Oyun geliştirme ekipleri için proje yönetim aracı. Derleme adımı gerektirm
 | Görünüm | Neler var |
 |---|---|
 | **Pano** | Trello benzeri listeler ve kartlar. Kartlar ve listeler sürükle-bırakla taşınır (fare, kalem ve dokunmatik). Kart rengi, renkli etiketler, kişi atama, başlangıç/bitiş tarihi, tamamlama, açıklama (Markdown), kontrol listesi, yorumlar, aktivite geçmişi, öncelik, tahmini süre ve bağımlılıklar desteklenir. Hata kartları için şiddet, platform, build no, tekrar üretme adımları ve beklenen/gerçekleşen davranış alanları vardır. |
+| **Yapılacaklar** | Her kişi için bir kart ve **günlük, haftalık veya aylık** liste. Kişiye atanmış ve tarihi o döneme denk gelen kartlar otomatik listelenir (işaretlemek panodaki kartı da tamamlar); ayrıca herkes, isterse bir karta bağlı, ek iş ekleyebilir. Zamana, önceliğe veya sürükleyerek belirlenen özel sıraya göre sıralanır. Geciken kartlar ve önceki dönemden kalan işler üstte görünür. "Sadece ben" ve "Tamamlananlar" düğmeleri vardır; ortak filtre burada da geçerlidir. |
 | **Gantt** | Kartlardan otomatik oluşur. Gün/hafta/ay yakınlaştırması; liste, kişi veya etikete göre gruplama; daraltılabilir özet çubukları ve ilerleme dolgusu. Kilometre taşları, bağımlılık okları (ihlal edilenler kırmızı), kritik yol ve bugün çizgisi bulunur. Çubuğu sürükleyerek tarih kaydırılır, kenarından sürükleyerek süre değiştirilir, sağdaki noktadan başka bir çubuğa sürükleyerek bağımlılık eklenir. **SVG/PNG** olarak dışa aktarılır. |
 | **Takvim** | Çok günlü çubuklarla aylık görünüm. Sürükleyerek tarih değişir, güne tıklayarak kart eklenir. Gecikenler ve yaklaşanlar listelenir. Google/Outlook takvimine **.ics** olarak aktarılır. |
 | **İş yükü** | Kişi × hafta (veya gün) ısı haritası. Tahmini saatler iş günlerine dağıtılır; kapasite aşımı kırmızı görünür. SVG/PNG olarak aktarılır. |
@@ -24,7 +25,7 @@ Genel özellikler:
 - **Arka plan:** 12 hazır desen, düz renk, görsel bağlantısı ya da görsel yükleme.
 - **Tema ve dil:** Aydınlık/karanlık tema ve Türkçe/İngilizce arayüz varsayılan olarak sistem ayarını izler. Üst çubuktan veya Ayarlar'dan değiştirilir.
 - **Birden fazla pano**, Trello JSON içe aktarma, tam JSON yedekleme ve geri yükleme.
-- **Kısayollar:** `/` aramaya odaklanır, `1`–`7` görünümler arasında geçer, `Esc` pencereyi kapatır.
+- **Kısayollar:** `/` aramaya odaklanır, `1`–`8` görünümler arasında geçer, `Esc` pencereyi kapatır.
 
 ## Yapay zekâ bölümü (TÜBİTAK rehberi)
 
@@ -62,9 +63,9 @@ Veriler her durumda önce tarayıcıya (localStorage) kaydedilir; uygulama inter
 
 ### Aynı anda düzenleme
 
-Her kart, liste, yorum vb. ayrı bir kayıttır ve kendi "son değişiklik" zaman damgasını taşır. Birleştirme **kayıt bazında** yapılır: Ayşe A kartını, Mehmet B kartını aynı anda düzenlerse ikisinin değişikliği de korunur. Sadece **aynı kartı aynı saniyelerde** iki kişi değiştirirse son kaydeden kazanır. Silmeler de kayıt olarak tutulur, böylece silinen kart başka bir cihazdan geri gelmez.
+Her kart, liste, yorum vb. ayrı bir kayıttır ve kendi "son değişiklik" zaman damgasını taşır. Birleştirme **kayıt bazında** yapılır: Ayşe A kartını, Mehmet B kartını aynı anda düzenlerse ikisinin değişikliği de korunur. İki kişi **aynı öğeyi** değiştirirse, ikinci senkronlayan kişiye kendi sürümünü **Kal** ile mi koruyacağı yoksa Drive'dakiyle **Değiştir** mi diyeceği sorulur. Uygulama açıldığında Drive'daki dosya değişmişse ve bu cihazda hiç yüklenmemiş değişiklikler varsa (örneğin internetsizken yapılanlar) aynı soru sorulur: **Kal** ekibin güncellemelerini alıp senin değişikliklerini korur, **Değiştir** yüklenmemiş değişiklikleri bırakıp Drive'daki sürümü kullanır. Silmeler de kayıt olarak tutulur, böylece silinen kart başka bir cihazdan geri gelmez.
 
-Dosya yaklaşık 15 saniyede bir kontrol edilir. Uygulama yüklemeden önce en güncel dosyayı indirip birleştirir; iki yükleme çakışırsa bir sonraki turda kendini onarır.
+Dosya yaklaşık 15 saniyede bir, ayrıca sekmeden çıkınca ve sekmeye dönünce hemen kontrol edilir. Uygulama yüklemeden önce en güncel dosyayı indirip birleştirir ve yazmadan hemen önce bir kez daha kontrol eder; iki yükleme yine de çakışırsa bir sonraki turda kendini onarır.
 
 ### Kurulum (bir kişi, bir kez, ~15 dk)
 
@@ -82,6 +83,7 @@ Dosya yaklaşık 15 saniyede bir kontrol edilir. Uygulama yüklemeden önce en g
        clientId: '1234567890-abc….apps.googleusercontent.com',
        apiKey: 'AIza…',
        appId: '123456789012',
+       fileId: '',   // isteğe bağlı: ortak veri dosyası, aşağıya bakın
      },
    };
    ```
@@ -91,10 +93,11 @@ Dosya yaklaşık 15 saniyede bir kontrol edilir. Uygulama yüklemeden önce en g
 ### Her ekip üyesi için
 
 1. Bir kişi **Ayarlar → Senkronizasyon** bölümünde **Drive'da yeni dosya oluştur**'a tıklar ve oluşan `gamedev-pm-data.json` dosyasını Drive'da ekiple **Düzenleyen** olarak paylaşır.
-2. Diğerleri siteyi açar, üst çubuktaki **Bağlan**'a tıklar ve paylaşılan dosyayı **Drive'dan seç** ile bir kez açar.
-3. Herkes **Ayarlar → Genel → Ben kimim?** kısmından kendi adını seçer; yorum ve kayıtlarda bu ad görünür.
+2. İsteğe bağlı ama önerilir: **Ayarlar → Senkronizasyon** bölümünde **config.js için kimliği kopyala**'ya tıklayın, `config.js` içindeki `fileId` alanına yapıştırıp GitHub'a yükleyin. Bundan sonra site herkes için ekip dosyasını otomatik açar.
+3. Diğerleri siteyi açar ve bir kez **Bağlan**'a tıklar. Uygulama veri dosyasını kendisi bulur (`config.js`'teki ekip dosyası, bu tarayıcının daha önce kullandığı dosya ya da Drive'daki uygulama dosyaları). Yalnızca bu Google hesabı ortak dosyayı daha önce hiç açmadıysa Google, kendi dosya seçicisinde bir tıklama ister; seçici o dosya seçili olarak açılır.
+4. Herkes **Ayarlar → Genel → Ben kimim?** kısmından kendi adını seçer; yorum ve kayıtlarda bu ad görünür.
 
-Giriş belirteci yaklaşık 1 saat geçerlidir; süresi dolunca üst çubuktaki **Bağlan** düğmesine bir kez tıklamak yeterlidir.
+**Oturumun açık kalması:** Google'ın tarayıcı girişi bir saat geçerli belirteç verir ve statik bir sitenin bunu arka planda yenileyecek sunucusu yoktur. Uygulama belirteci yenilemeler ve sekmeler arasında saklar; süresi dolmak üzereyken (ya da dolduğunda) **sayfada herhangi bir yere tıkladığında** kendiliğinden yeniler: Google penceresi bir an açılıp tekrar sormadan kapanır. Tarayıcın bu pencereyi engellerse site için açılır pencerelere bir kez izin ver. Oturum kapalıyken yapılan değişiklikler saklanır ve yenilemeden sonra yüklenir.
 
 ## Yedekleme
 
@@ -112,7 +115,7 @@ js/
   model.js                           pano/kart mantığı, filtre, örnek veri, Trello içe aktarma
   sync.js                            Google Drive senkronu
   md.js export.js settings.js app.js
-  views/  board card gantt calendar workload stats wiki ai
+  views/  board card todo gantt calendar workload stats wiki ai
 ```
 
 ## Emeği geçenler

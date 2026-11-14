@@ -12,7 +12,7 @@ const WikiView = {
     this.mode = innerWidth < 900 ? 'preview' : 'split';
     this.render();
   },
-  pages() { return Model.wiki(Model.board().id); },
+  pages() { const b = Model.board(); return b ? Model.wiki(b.id) : []; },
   current() {
     const ps = this.pages();
     return ps.find(p => p.id === Prefs.get('wikiPage')) || ps[0] || null;

@@ -1,7 +1,7 @@
 'use strict';
 /* App shell: top bar, view dock, routing, theme, filters, keyboard. */
-const VIEWS = { board: BoardView, gantt: GanttView, calendar: CalendarView, workload: WorkloadView, stats: StatsView, wiki: WikiView, ai: AIView };
-const VIEW_ICONS = { board: 'board', gantt: 'gantt', calendar: 'calendar', workload: 'users', stats: 'chart', wiki: 'book', ai: 'sparkle' };
+const VIEWS = { board: BoardView, todo: TodoView, gantt: GanttView, calendar: CalendarView, workload: WorkloadView, stats: StatsView, wiki: WikiView, ai: AIView };
+const VIEW_ICONS = { board: 'board', todo: 'checklist', gantt: 'gantt', calendar: 'calendar', workload: 'users', stats: 'chart', wiki: 'book', ai: 'sparkle' };
 const LIGHT_BGS = ['sand', 'sky', 'mint', 'paper'];
 
 const App = {
@@ -225,7 +225,7 @@ const App = {
     if (typing || e.ctrlKey || e.metaKey || e.altKey || UI.top) return;
     if (e.key === '/') { e.preventDefault(); U.$('#search')?.focus(); return; }
     const n = +e.key;
-    if (n >= 1 && n <= 7) { e.preventDefault(); this.show(Object.keys(VIEWS)[n - 1]); }
+    if (n >= 1 && n <= Object.keys(VIEWS).length) { e.preventDefault(); this.show(Object.keys(VIEWS)[n - 1]); }
   },
 };
 
